@@ -1,6 +1,8 @@
 #include "02_open_closed.h"
 #include "05_dependency_inversion.h"
+#include "count_duplicates.h"
 #include "equal_sides_of_an_array.h"
+#include "fibonacci_tribonacci_and_friends.h"
 #include "sort_the_inner_content.h"
 #include "sort_the_odd.h"
 #include "tortoise_race.h"
@@ -18,9 +20,9 @@ int main()
     //    dependency_inversion();
     //    sort_the_odd();
     //    sort_the_inner_content();
-
-    tortoise_race();
-
+    //    tortoise_race();
+    //    count_duplicates();
+    fibonacci_tribonacci_and_friends();
 
     return 0;
 }

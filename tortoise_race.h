@@ -42,21 +42,17 @@ public:
             return { -1, -1, -1 };
         }
 
-        double t = 1.0 * g / (v2 - v1);
+        long double t = static_cast<long double>(g) / (static_cast<long double>(v2) - static_cast<long double>(v1));
 
-        auto hours   = static_cast<int>(std::floor(t));
-        auto minutes = static_cast<int>(std::floor(60.0 * (t - std::floor(t))));
-        auto seconds = static_cast<int>(std::floor(3600.0 * (t - 1.0 * hours - 1.0 * minutes / 60.0)));
-        if (seconds == 60) {
-            seconds = 0;
-            minutes += 1;
-        }
-        if (minutes == 60) {
-            minutes = 0;
-            hours += 1;
-        }
+        long double hours   = std::floor(t);
+        long double minutes = std::floor(60.0 * (t - hours));
+        long double seconds = std::floor(3600.1 * (t - hours - minutes / 60.0));
 
-        return { hours, minutes, seconds };
+        auto hours_i   = static_cast<int>(hours);
+        auto minutes_i = static_cast<int>(minutes);
+        auto seconds_i = static_cast<int>(seconds);
+
+        return { hours_i, minutes_i, seconds_i };
     }
 };
 
