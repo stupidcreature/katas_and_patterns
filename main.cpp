@@ -3,11 +3,11 @@
 #include "equal_sides_of_an_array.h"
 #include "sort_the_inner_content.h"
 #include "sort_the_odd.h"
+#include "tortoise_race.h"
 
 
 int main()
 {
-
     //    vector<int> numbers{ 1, 2, 3, 100, 3, 1, 2 };
     //    int         ret_should_be_3 = find_even_index(numbers);
     //    numbers                     = { 1, 2, 3, 4, 5, 6 };
@@ -18,6 +18,9 @@ int main()
     //    dependency_inversion();
     //    sort_the_odd();
     //    sort_the_inner_content();
+
+    tortoise_race();
+
 
     return 0;
 }
