@@ -3,6 +3,7 @@
 #include "count_duplicates.h"
 #include "equal_sides_of_an_array.h"
 #include "fibonacci_tribonacci_and_friends.h"
+#include "rainfall.h"
 #include "sort_the_inner_content.h"
 #include "sort_the_odd.h"
 #include "tortoise_race.h"
@@ -22,7 +23,8 @@ int main()
     //    sort_the_inner_content();
     //    tortoise_race();
     //    count_duplicates();
-    fibonacci_tribonacci_and_friends();
+    //    fibonacci_tribonacci_and_friends();
+    //    rainfall();
 
     return 0;
 }
