@@ -4,6 +4,7 @@
 #include "equal_sides_of_an_array.h"
 #include "fibonacci_tribonacci_and_friends.h"
 #include "rainfall.h"
+#include "simple_encryption_1.h"
 #include "sort_the_inner_content.h"
 #include "sort_the_odd.h"
 #include "tortoise_race.h"
@@ -25,6 +26,7 @@ int main()
     //    count_duplicates();
     //    fibonacci_tribonacci_and_friends();
     //    rainfall();
+    simple_encryption_1();
 
     return 0;
 }
