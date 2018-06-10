@@ -41,6 +41,7 @@ using namespace std;
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 struct Image {
     unsigned* pixels;
@@ -66,16 +67,32 @@ Image::Image(std::vector<unsigned int> _pixels, unsigned _width, unsigned _heigh
     }
 }
 
+std::map<unsigned, unsigned>::const_iterator cpp14_max_element(std::map<unsigned, unsigned>::const_iterator first,
+                                                               std::map<unsigned, unsigned>::const_iterator last)
+{
+    if (first == last) {
+        return last;
+    }
+
+    auto largest = first;
+    ++first;
+    for (; first != last; ++first) {
+        if (largest->second < first->second) {
+            largest = first;
+        }
+    }
+    return largest;
+}
 
 vector<unsigned> Image::central_pixels(unsigned color) const
 {
-    std::vector<unsigned> depth(width * height, 0);
-    std::vector<unsigned> stack;
-    bool                  in = false;
+    std::map<unsigned, unsigned> index_to_depth;
+    std::vector<unsigned>        stack;
+    bool                         in = false;
 
     enum class depth_mode { horizontal,
                             vertical };
-    auto depth_from_stack = [&depth, &in, &stack](depth_mode mode) {
+    auto depth_from_stack = [&index_to_depth, &in, &stack](depth_mode mode) {
         bool     is_even     = (stack.size() % 2 == 0);
         auto     max_depth   = static_cast<unsigned>(std::ceil(stack.size() / 2.0));
         unsigned curdepth    = 1;
@@ -86,8 +103,8 @@ vector<unsigned> Image::central_pixels(unsigned color) const
         }
 
         for (const auto idx : stack) {
-            if (mode == depth_mode::horizontal || depth[idx] > curdepth) {
-                depth[idx] = curdepth;
+            if (mode == depth_mode::horizontal || index_to_depth[idx] > curdepth) {
+                index_to_depth[idx] = curdepth;
             }
             curdepth += depth_delta;
             if (curdepth == max_depth) {
@@ -104,7 +121,7 @@ vector<unsigned> Image::central_pixels(unsigned color) const
     };
 
 
-    //horizontal
+    // horizontal
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
             const std::size_t index = y * width + x;
@@ -119,7 +136,7 @@ vector<unsigned> Image::central_pixels(unsigned color) const
     }
 
 
-    //vertical
+    // vertical
     for (unsigned x = 0; x < width; ++x) {
         for (unsigned y = 0; y < height; ++y) {
             const std::size_t index = y * width + x;
@@ -134,16 +151,17 @@ vector<unsigned> Image::central_pixels(unsigned color) const
     }
 
 
-    auto max_element_value = std::max_element(std::begin(depth), std::end(depth));
-    if (*max_element_value == 0)
+    auto max_element_value = cpp14_max_element(std::cbegin(index_to_depth),
+                                               std::cend(index_to_depth));
+    if (max_element_value->second == 0)
         return {};
 
     std::vector<unsigned> central_indices;
-    auto                  is_equal_to_max_element_value = [max_value = *max_element_value](const auto val) { return val == max_value; };
-    auto                  it                            = std::find_if(std::begin(depth), std::end(depth), is_equal_to_max_element_value);
-    while (it != std::end(depth)) {
-        central_indices.emplace_back(std::distance(std::begin(depth), it));
-        it = std::find_if(std::next(it), std::end(depth), is_equal_to_max_element_value);
+    auto                  is_equal_to_max_element_value = [max_value = max_element_value->second](const auto& val) { return val.second == max_value; };
+    auto                  it                            = std::find_if(std::begin(index_to_depth), std::end(index_to_depth), is_equal_to_max_element_value);
+    while (it != std::end(index_to_depth)) {
+        central_indices.emplace_back(it->first);
+        it = std::find_if(std::next(it), std::end(index_to_depth), is_equal_to_max_element_value);
     }
 
     return central_indices;
