@@ -41,7 +41,6 @@ using namespace std;
 
 #include <algorithm>
 #include <cmath>
-#include <map>
 
 struct Image {
     unsigned* pixels;
@@ -67,32 +66,27 @@ Image::Image(std::vector<unsigned int> _pixels, unsigned _width, unsigned _heigh
     }
 }
 
-std::map<unsigned, unsigned>::const_iterator cpp14_max_element(std::map<unsigned, unsigned>::const_iterator first,
-                                                               std::map<unsigned, unsigned>::const_iterator last)
-{
-    if (first == last) {
-        return last;
-    }
-
-    auto largest = first;
-    ++first;
-    for (; first != last; ++first) {
-        if (largest->second < first->second) {
-            largest = first;
-        }
-    }
-    return largest;
-}
 
 vector<unsigned> Image::central_pixels(unsigned color) const
 {
-    std::map<unsigned, unsigned> index_to_depth;
-    std::vector<unsigned>        stack;
-    bool                         in = false;
+    //    std::cout << "width=" << width << ", height=" << height << '\n';
+    //    std::cout << "color=" << color << '\n';
+    //    for (unsigned y = 0; y < height; ++y) {
+    //        for (unsigned x = 0; x < width; ++x) {
+    //            const std::size_t index = y * width + x;
+    //            std::cout << pixels[index] << ", ";
+    //        }
+    //        std::cout << '\n';
+    //    }
 
-    enum class depth_mode { horizontal,
-                            vertical };
-    auto depth_from_stack = [&index_to_depth, &in, &stack](depth_mode mode) {
+    std::vector<unsigned> depth(width * height, 0);
+    std::vector<unsigned> stack;
+    bool                  is_in_target_color = false;
+
+    enum class search_mode { horizontal,
+                             vertical };
+
+    auto depth_from_stack = [&depth, &is_in_target_color, &stack](search_mode mode) {
         bool     is_even     = (stack.size() % 2 == 0);
         auto     max_depth   = static_cast<unsigned>(std::ceil(stack.size() / 2.0));
         unsigned curdepth    = 1;
@@ -103,8 +97,8 @@ vector<unsigned> Image::central_pixels(unsigned color) const
         }
 
         for (const auto idx : stack) {
-            if (mode == depth_mode::horizontal || index_to_depth[idx] > curdepth) {
-                index_to_depth[idx] = curdepth;
+            if (mode == search_mode::horizontal || depth[idx] > curdepth) {
+                depth[idx] = curdepth;
             }
             curdepth += depth_delta;
             if (curdepth == max_depth) {
@@ -117,51 +111,51 @@ vector<unsigned> Image::central_pixels(unsigned color) const
             }
         }
         stack.clear();
-        in = false;
+        is_in_target_color = false;
     };
 
 
-    // horizontal
+    //horizontal
     for (unsigned y = 0; y < height; ++y) {
         for (unsigned x = 0; x < width; ++x) {
             const std::size_t index = y * width + x;
             if (color == pixels[index]) {
                 stack.push_back(index);
-                in = true;
-            } else if (in) {
-                depth_from_stack(depth_mode::horizontal);
+                is_in_target_color = true;
+            } else if (is_in_target_color) {
+                depth_from_stack(search_mode::horizontal);
             }
         }
-        depth_from_stack(depth_mode::horizontal);
+        depth_from_stack(search_mode::horizontal);
     }
 
 
-    // vertical
+    //vertical
     for (unsigned x = 0; x < width; ++x) {
         for (unsigned y = 0; y < height; ++y) {
             const std::size_t index = y * width + x;
             if (color == pixels[index]) {
                 stack.push_back(index);
-                in = true;
-            } else if (in) {
-                depth_from_stack(depth_mode::vertical);
+                is_in_target_color = true;
+            } else if (is_in_target_color) {
+                depth_from_stack(search_mode::vertical);
             }
         }
-        depth_from_stack(depth_mode::vertical);
+        depth_from_stack(search_mode::vertical);
     }
 
 
-    auto max_element_value = cpp14_max_element(std::cbegin(index_to_depth),
-                                               std::cend(index_to_depth));
-    if (max_element_value->second == 0)
+    auto max_element_value = std::max_element(std::begin(depth), std::end(depth));
+    if (*max_element_value == 0) {
         return {};
+    }
 
     std::vector<unsigned> central_indices;
-    auto                  is_equal_to_max_element_value = [max_value = max_element_value->second](const auto& val) { return val.second == max_value; };
-    auto                  it                            = std::find_if(std::begin(index_to_depth), std::end(index_to_depth), is_equal_to_max_element_value);
-    while (it != std::end(index_to_depth)) {
-        central_indices.emplace_back(it->first);
-        it = std::find_if(std::next(it), std::end(index_to_depth), is_equal_to_max_element_value);
+    auto                  is_equal_to_max_element_value = [max_value = *max_element_value](const auto val) { return val == max_value; };
+    auto                  it                            = std::find_if(std::begin(depth), std::end(depth), is_equal_to_max_element_value);
+    while (it != std::end(depth)) {
+        central_indices.emplace_back(std::distance(std::begin(depth), it));
+        it = std::find_if(std::next(it), std::end(depth), is_equal_to_max_element_value);
     }
 
     return central_indices;
@@ -176,13 +170,51 @@ vector<unsigned> sorted(const vector<unsigned>& v);
 
 Describe(Centre_of_attention){
     It(Example_In_The_Picture){
-        Image image({ 1, 1, 4, 4, 4, 4, 2, 2, 2, 2,
-                      1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-                      1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
-                      1, 1, 1, 1, 1, 3, 2, 2, 2, 2,
-                      1, 1, 1, 1, 1, 3, 3, 3, 2, 2,
-                      1, 1, 1, 1, 1, 1, 3, 3, 3, 3 },
-                    10, 6);
+        //        Image image({ 1, 1, 4, 4, 4, 4, 2, 2, 2, 2,
+        //                      1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+        //                      1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+        //                      1, 1, 1, 1, 1, 3, 2, 2, 2, 2,
+        //                      1, 1, 1, 1, 1, 3, 3, 3, 2, 2,
+        //                      1, 1, 1, 1, 1, 1, 3, 3, 3, 3 },
+        //                    10, 6);
+
+
+        Image image({ 5, 7, 7, 7, 7, 6, 6, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 5, 5,
+                      5, 7, 7, 7, 7, 6, 6, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 5, 5,
+                      5, 7, 7, 7, 7, 6, 6, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 5, 5,
+                      7, 5, 5, 5, 5, 5, 5, 7, 7, 5, 5, 5, 6, 6, 5, 5, 5, 7, 7, 7, 7, 5, 7, 7, 7, 7, 7, 7, 7,
+                      7, 5, 5, 5, 5, 5, 5, 7, 7, 5, 5, 5, 6, 6, 5, 5, 5, 7, 7, 7, 7, 5, 7, 7, 7, 7, 7, 7, 7,
+                      5, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 7, 6, 6, 6, 6, 6, 7, 7,
+                      5, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5, 7, 6, 6, 6, 6, 6, 7, 7,
+                      5, 7, 7, 7, 7, 6, 6, 6, 6, 7, 7, 7, 6, 6, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                      5, 7, 7, 7, 7, 6, 6, 6, 6, 7, 7, 7, 6, 6, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                      5, 7, 7, 7, 7, 6, 6, 6, 6, 7, 7, 7, 6, 6, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                      5, 7, 7, 7, 7, 6, 6, 6, 6, 7, 7, 7, 6, 6, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                      5, 7, 7, 7, 7, 6, 6, 5, 5, 7, 7, 7, 7, 7, 5, 5, 5, 7, 7, 7, 7, 6, 5, 5, 5, 5, 5, 5, 5,
+                      5, 7, 7, 7, 7, 6, 6, 5, 5, 7, 7, 7, 7, 7, 5, 5, 5, 7, 7, 7, 7, 6, 5, 5, 5, 5, 5, 5, 5,
+                      5, 7, 7, 7, 7, 6, 6, 5, 5, 7, 7, 7, 7, 7, 5, 5, 5, 7, 7, 7, 7, 6, 5, 5, 5, 5, 5, 5, 5,
+                      7, 5, 5, 5, 5, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 5, 6, 6, 6, 6, 6, 5, 5,
+                      7, 5, 5, 5, 5, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 5, 6, 6, 6, 6, 6, 5, 5,
+                      7, 5, 5, 5, 5, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 5, 6, 6, 6, 6, 6, 5, 5,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 7, 7, 7, 7, 6, 6, 7, 7, 6, 6, 6, 5, 5, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 6, 6,
+                      6, 6, 6, 6, 6, 5, 5, 5, 5, 7, 7, 7, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 7, 7,
+                      5, 5, 5, 5, 5, 6, 6, 6, 6, 5, 5, 5, 6, 6, 7, 7, 7, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 6, 6,
+                      5, 5, 5, 5, 5, 6, 6, 6, 6, 5, 5, 5, 6, 6, 7, 7, 7, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 6, 6,
+                      5, 5, 5, 5, 5, 6, 6, 6, 6, 5, 5, 5, 6, 6, 7, 7, 7, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 6, 6,
+                      5, 5, 5, 5, 5, 6, 6, 6, 6, 5, 5, 5, 6, 6, 7, 7, 7, 5, 5, 5, 5, 5, 7, 7, 7, 7, 7, 6, 6 },
+                    29, 29);
+
+//        Expected: equal to [ 73 ]
+//        Actual: [ 69, 72, 73, 74 ]
+vector<unsigned> random = { 73 };
+Assert::That(image.central_pixels(5), Equals(random));
+
 
 // Only one red pixel has the maximum depth of 3:
 vector<unsigned> red_ctr = { 32 };

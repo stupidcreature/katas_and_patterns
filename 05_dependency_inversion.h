@@ -1,5 +1,5 @@
-#ifndef TEST02_INTERFACE_SEGREGATION_H
-#define TEST02_INTERFACE_SEGREGATION_H
+#ifndef TEST02_DEPENDENCY_INVERSION_H
+#define TEST02_DEPENDENCY_INVERSION_H
 
 #include <iostream>
 #include <memory>
@@ -94,4 +94,4 @@ void dependency_inversion()
 }
 
 
-#endif //TEST02_INTERFACE_SEGREGATION_H
+#endif //TEST02_DEPENDENCY_INVERSION_H
